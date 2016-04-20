@@ -70,3 +70,4 @@ with open('train.csv', 'rb') as f:
               writer.writerows(pre_processed_list)
               pre_processed_list = []
               g.close()
+              
