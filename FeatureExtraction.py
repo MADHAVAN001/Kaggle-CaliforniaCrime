@@ -43,6 +43,20 @@ with open('train.csv', 'rb') as f:
   data = m.readline()
 
   while data:
-      data = m.readline()
+      data = m.readline().split(',')
+      year = int(data[0][0:4])
+      month = int(data[0][5:7])
+      hour = int(data[0][11:13])
+      day = days[data[3]]
+      dist = district[data[4]]
+      addr = address[data[7]]
+      x = data[8]
+      y = data[9]
+      print "Month" + str(month)
+      print "Day" + str(day)
+      print "district "+str(dist)
+      print "addr "+str(addr)
+      print "x" + str(x)
+      print "y" + str(y)
       print data
       break
