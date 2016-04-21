@@ -11,12 +11,12 @@ df = pd.read_csv('train_labels.csv')
 labels = np.array(df)
 
 # Data and labels are read
-train_set_x = data[:2093]
-val_set_x = data[2094:4187]
-test_set_x = data[4188:6281]
-train_set_y = labels[:2093]
-val_set_y = labels[2094:4187]
-test_set_y = labels[4188:6281]
+train_set_x = data[:600000]
+val_set_x = data[600001:700000]
+test_set_x = data[700001:790000]
+train_set_y = labels[:600000]
+val_set_y = labels[600001:700000]
+test_set_y = labels[700001:790000]
 # Divided dataset into 3 parts. I had 6281 images.
 
 train_set = train_set_x, train_set_y
