@@ -25,6 +25,6 @@ test_set = test_set_x, val_set_y
 
 dataset = [train_set, val_set, test_set]
 
-f = gzip.open('file.pkl.gz','wb')
+f = gzip.open('california-crime.pkl.gz','wb')
 cPickle.dump(dataset, f, protocol=2)
 f.close()
