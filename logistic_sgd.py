@@ -7,7 +7,7 @@ import gzip
 import os
 import sys
 import timeit
-
+import csv
 import numpy
 
 import theano
@@ -97,9 +97,20 @@ def load_data(dataset):
                                  borrow=borrow)
         return shared_x, T.cast(shared_y, 'int64')
 
-    test_set = [[[1,0,0],[2,0,1]],[1,0]]
-    valid_set = [[[1,0,0],[2,0,1]],[1,0]]
-    train_set = [[[1,0,0],[2,0,1]],[1,0]]
+    with open('train_preprocessed.csv', 'rb') as training_input:
+        reader = csv.reader(training_input)
+        data_list = list(reader)
+
+    with open('train_labels.csv', 'rb') as training_labels:
+        reader = csv.reader(training_labels)
+        labels_list = list(reader)
+
+    new_labels_list = [i[0] for i in labels_list]
+    #print(len(labels_list))
+    test_set = [data_list[700001:], new_labels_list[700001:]]
+    #print (test_set)
+    valid_set = [data_list[600001:700000],new_labels_list[600001:700000]]
+    train_set = [data_list[:600000],new_labels_list[:600000]]
     test_set_x, test_set_y = shared_dataset(test_set)
     valid_set_x, valid_set_y = shared_dataset(valid_set)
     train_set_x, train_set_y = shared_dataset(train_set)
@@ -114,7 +125,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
                            dataset='california-crime.pkl.gz',
                            batch_size=1):
     datasets = load_data(dataset)
-    print(datasets[0][1].shape.eval())
+    #print(datasets[0][1].shape.eval())
     train_set_x, train_set_y = datasets[0]
     valid_set_x, valid_set_y = datasets[1]
     test_set_x, test_set_y = datasets[2]
@@ -122,7 +133,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] // batch_size
     n_test_batches = test_set_x.get_value(borrow=True).shape[0] // batch_size
 
-    print(n_test_batches)
+    #print(n_test_batches)
     ######################
     # BUILD ACTUAL MODEL #
     ######################
@@ -130,10 +141,10 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     index = T.iscalar()  # index to a [mini]batch
     x = T.matrix('x')  # data, presented as rasterized images
     y = T.lvector('y')  # labels, presented as 1D vector of [int] labels
-    print("y.type", y.type, "y.ndim", y.ndim)
-    print ("test_set_y", test_set_y.type, "test_set_y.ndim", test_set_y.ndim)
+    #print("y.type", y.type, "y.ndim", y.ndim)
+    #print ("test_set_y", test_set_y.type, "test_set_y.ndim", test_set_y.ndim)
 
-    classifier = LogisticRegression(input=x, n_in=3, n_out=2)
+    classifier = LogisticRegression(input=x, n_in=8, n_out=39)
     cost = classifier.negative_log_likelihood(y)
     print(index)
     print(batch_size)
@@ -178,7 +189,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     ###############
     print('... training the model')
     # early-stopping parameters
-    patience = 5000  # look as this many examples regardless
+    patience = 500000  # look as this many examples regardless
     patience_increase = 2  # wait this much longer when a new best is
                                   # found
     improvement_threshold = 0.995  # a relative improvement of this much is
