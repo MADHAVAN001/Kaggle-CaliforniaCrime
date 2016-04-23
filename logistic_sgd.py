@@ -41,7 +41,8 @@ class LogisticRegression(object):
         self.input = input
 
     def negative_log_likelihood(self, y):
-        return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
+        num = -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
+        return num
 
 
     def errors(self, y):
@@ -94,11 +95,15 @@ def load_data(dataset):
         shared_y = theano.shared(numpy.asarray(data_y,
                                                dtype=theano.config.floatX),
                                  borrow=borrow)
-        return shared_x, T.cast(shared_y, 'int32')
+        return shared_x, T.cast(shared_y, 'int64')
 
+    test_set = [[[1,0,0],[2,0,1]],[1,0]]
+    valid_set = [[[1,0,0],[2,0,1]],[1,0]]
+    train_set = [[[1,0,0],[2,0,1]],[1,0]]
     test_set_x, test_set_y = shared_dataset(test_set)
     valid_set_x, valid_set_y = shared_dataset(valid_set)
     train_set_x, train_set_y = shared_dataset(train_set)
+
 
     rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),
             (test_set_x, test_set_y)]
@@ -109,26 +114,29 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
                            dataset='california-crime.pkl.gz',
                            batch_size=1):
     datasets = load_data(dataset)
-
+    print(datasets[0][1].shape.eval())
     train_set_x, train_set_y = datasets[0]
     valid_set_x, valid_set_y = datasets[1]
     test_set_x, test_set_y = datasets[2]
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] // batch_size
     n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] // batch_size
     n_test_batches = test_set_x.get_value(borrow=True).shape[0] // batch_size
+
+    print(n_test_batches)
     ######################
     # BUILD ACTUAL MODEL #
     ######################
     print('... building the model')
-    index = T.scalar()  # index to a [mini]batch
+    index = T.iscalar()  # index to a [mini]batch
     x = T.matrix('x')  # data, presented as rasterized images
-    y = T.vector('y')  # labels, presented as 1D vector of [int] labels
-
+    y = T.lvector('y')  # labels, presented as 1D vector of [int] labels
     print("y.type", y.type, "y.ndim", y.ndim)
     print ("test_set_y", test_set_y.type, "test_set_y.ndim", test_set_y.ndim)
 
-    classifier = LogisticRegression(input=x, n_in=1*8, n_out=1)
+    classifier = LogisticRegression(input=x, n_in=3, n_out=2)
     cost = classifier.negative_log_likelihood(y)
+    print(index)
+    print(batch_size)
     test_model = theano.function(
         inputs=[index],
         outputs=classifier.errors(y),
