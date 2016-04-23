@@ -121,9 +121,9 @@ def load_data(dataset):
     return rval
 
 
-def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
+def sgd_optimization_mnist(learning_rate=0.13, n_epochs=10,
                            dataset='california-crime.pkl.gz',
-                           batch_size=1):
+                           batch_size=10000):
     datasets = load_data(dataset)
     #print(datasets[0][1].shape.eval())
     train_set_x, train_set_y = datasets[0]
@@ -278,9 +278,9 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     print(('The code for file ' +
            os.path.split(__file__)[1] +
            ' ran for %.1fs' % ((end_time - start_time))), file=sys.stderr)
+    predict(datasets[2])
 
-
-def predict():
+def predict(test_set):
     """
     An example of how to load a trained model and use it
     to predict labels.
@@ -294,12 +294,8 @@ def predict():
         inputs=[classifier.input],
         outputs=classifier.y_pred)
 
-    # We can test it on some examples from test test
-    dataset='california-crime.pkl.gz'
-    datasets = load_data(dataset)
-    test_set_x, test_set_y = datasets[2]
-    test_set_x = test_set_x.get_value()
-
+    test_set_x = test_set[0]
+    test_set_y = test_set[1]
     predicted_values = predict_model(test_set_x[:10])
     print("Predicted values for the first 10 examples in test set:")
     print(predicted_values)
@@ -307,3 +303,4 @@ def predict():
 
 if __name__ == '__main__':
     sgd_optimization_mnist()
+    predict()
