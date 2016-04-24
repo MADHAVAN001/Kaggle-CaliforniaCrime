@@ -3,7 +3,6 @@ from __future__ import print_function
 __docformat__ = 'restructedtext en'
 
 import six.moves.cPickle as pickle
-import gzip
 import os
 import sys
 import timeit
@@ -60,33 +59,6 @@ class LogisticRegression(object):
 
 def load_data(dataset):
 
-    data_dir, data_file = os.path.split(dataset)
-    if data_dir == "" and not os.path.isfile(dataset):
-        new_path = os.path.join(
-            os.path.split(__file__)[0],
-            "..",
-            "data",
-            dataset
-        )
-        if os.path.isfile(new_path) or data_file == 'california-crime.pkl.gz':
-            dataset = new_path
-
-    if (not os.path.isfile(dataset)) and data_file == 'california-crime.pkl.gz':
-        from six.moves import urllib
-        origin = (
-            'http://www.iro.umontreal.ca/~lisa/deep/data/mnist/california-crime.pkl.gz'
-        )
-        print('Downloading data from %s' % origin)
-        urllib.request.urlretrieve(origin, dataset)
-
-    print('... loading data')
-    with gzip.open(dataset, 'rb') as f:
-        try:
-            train_set, valid_set, test_set = pickle.load(f, encoding='latin1')
-        except:
-            train_set, valid_set, test_set = pickle.load(f)
-
-
     def shared_dataset(data_xy, borrow=True):
         data_x, data_y = data_xy
         shared_x = theano.shared(numpy.asarray(data_x,
@@ -95,7 +67,7 @@ def load_data(dataset):
         shared_y = theano.shared(numpy.asarray(data_y,
                                                dtype=theano.config.floatX),
                                  borrow=borrow)
-        return shared_x, T.cast(shared_y, 'int64')
+        return shared_x, T.cast(shared_y, 'int32')
 
     with open('train_preprocessed.csv', 'rb') as training_input:
         reader = csv.reader(training_input)
@@ -115,8 +87,8 @@ def load_data(dataset):
 
     test_set = [new_data_list, new_labels_list]#[new_data_list[160:165], new_labels_list[160:165]]#[[[1,0,0],[2,1,1]],[1,0]]#[data_list[700001:], new_labels_list[700001:]]
     #print (test_set)
-    valid_set = [new_data_list, new_labels_list]#[new_data_list[160:165],new_labels_list[160:165]] #[[[1,0,0],[2,1,1]],[1,0]] #
-    train_set = [new_data_list, new_labels_list]#[new_data_list[160:165],new_labels_list[160:165]]#[[[1,0,0],[2,1,1]],[1,0]] #[data_list[:600000],new_labels_list[:600000]]
+    valid_set = [new_data_list[600001:], new_labels_list[600001:]]#[new_data_list[160:165],new_labels_list[160:165]] #[[[1,0,0],[2,1,1]],[1,0]] #
+    train_set = [new_data_list[:600000], new_labels_list[:600000]]#[new_data_list[160:165],new_labels_list[160:165]]#[[[1,0,0],[2,1,1]],[1,0]] #[data_list[:600000],new_labels_list[:600000]]
     test_set_x, test_set_y = shared_dataset(test_set)
     valid_set_x, valid_set_y = shared_dataset(valid_set)
     train_set_x, train_set_y = shared_dataset(train_set)
@@ -127,9 +99,9 @@ def load_data(dataset):
     return rval
 
 
-def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
+def sgd_optimization_mnist(learning_rate=0.3, n_epochs=1000000,
                            dataset='california-crime.pkl.gz',
-                           batch_size=10000):
+                           batch_size=1000):
     datasets = load_data(dataset)
     #print(datasets[0][1].shape.eval())
     train_set_x, train_set_y = datasets[0]
@@ -144,11 +116,9 @@ def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
     # BUILD ACTUAL MODEL #
     ######################
     print('... building the model')
-    index = T.iscalar()  # index to a [mini]batch
-    x = T.matrix('x')  # data, presented as rasterized images
-    y = T.lvector('y')  # labels, presented as 1D vector of [int] labels
-    #print("y.type", y.type, "y.ndim", y.ndim)
-    #print ("test_set_y", test_set_y.type, "test_set_y.ndim", test_set_y.ndim)
+    index = T.iscalar()
+    x = T.matrix('x')
+    y = T.ivector('y')
 
     classifier = LogisticRegression(input=x, n_in=8, n_out=39)
     cost = classifier.negative_log_likelihood(y)
@@ -172,7 +142,6 @@ def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
         }
     )
 
-    # compute the gradient of cost with respect to theta = (W,b)
     g_W = T.grad(cost=cost, wrt=classifier.W)
     g_b = T.grad(cost=cost, wrt=classifier.b)
 
@@ -188,23 +157,13 @@ def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
             y: train_set_y[index * batch_size: (index + 1) * batch_size]
         }
     )
-    # end-snippet-3
 
-    ###############
-    # TRAIN MODEL #
-    ###############
     print('... training the model')
     # early-stopping parameters
-    patience = 500000  # look as this many examples regardless
-    patience_increase = 2  # wait this much longer when a new best is
-                                  # found
-    improvement_threshold = 0.995  # a relative improvement of this much is
-                                  # considered significant
+    patience = 600000
+    patience_increase = 2
+    improvement_threshold = 0.009
     validation_frequency = min(n_train_batches, patience // 2)
-                                  # go through this many
-                                  # minibatche before checking the network
-                                  # on the validation set; in this case we
-                                  # check every epoch
 
     best_validation_loss = numpy.inf
     test_score = 0.
@@ -212,7 +171,7 @@ def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
 
     done_looping = False
     epoch = 0
-    while (epoch < n_epochs) and (not done_looping):
+    while (epoch < n_epochs):
         epoch = epoch + 1
         for minibatch_index in range(n_train_batches):
 
@@ -224,6 +183,7 @@ def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
                 # compute zero-one loss on validation set
                 validation_losses = [validate_model(i)
                                      for i in range(n_valid_batches)]
+                #print(validation_losses)
                 this_validation_loss = numpy.mean(validation_losses)
 
                 print(
@@ -263,7 +223,6 @@ def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
                         )
                     )
 
-                    # save the best model
                     with open('best_model.pkl', 'wb') as f:
                         pickle.dump(classifier, f)
 
@@ -287,15 +246,8 @@ def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
     predict(datasets)
 
 def predict(datasets):
-    """
-    An example of how to load a trained model and use it
-    to predict labels.
-    """
-
-    # load the saved model
     classifier = pickle.load(open('best_model.pkl'))
 
-    # compile a predictor function
     predict_model = theano.function(
         inputs=[classifier.input],
         outputs=classifier.y_pred)
