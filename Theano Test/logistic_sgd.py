@@ -450,9 +450,9 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     print(('The code for file ' +
            os.path.split(__file__)[1] +
            ' ran for %.1fs' % ((end_time - start_time))), file=sys.stderr)
+    predict(datasets)
 
-
-def predict():
+def predict(datasets):
     """
     An example of how to load a trained model and use it
     to predict labels.
@@ -466,9 +466,6 @@ def predict():
         inputs=[classifier.input],
         outputs=classifier.y_pred)
 
-    # We can test it on some examples from test test
-    dataset='mnist.pkl.gz'
-    datasets = load_data(dataset)
     test_set_x, test_set_y = datasets[2]
     test_set_x = test_set_x.get_value()
 

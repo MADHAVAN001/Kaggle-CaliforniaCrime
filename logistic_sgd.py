@@ -104,13 +104,19 @@ def load_data(dataset):
     with open('train_labels.csv', 'rb') as training_labels:
         reader = csv.reader(training_labels)
         labels_list = list(reader)
-
-    new_labels_list = [i[0] for i in labels_list]
+    new_data_list = []
+    for i in data_list:
+        tmp_list = []
+        for j in i:
+            tmp_list.append(float(j))
+        new_data_list.append(tmp_list)
+    new_labels_list = [int(i[0]) for i in labels_list]
     #print(len(labels_list))
-    test_set = [data_list[700001:], new_labels_list[700001:]]
+
+    test_set = [new_data_list, new_labels_list]#[new_data_list[160:165], new_labels_list[160:165]]#[[[1,0,0],[2,1,1]],[1,0]]#[data_list[700001:], new_labels_list[700001:]]
     #print (test_set)
-    valid_set = [data_list[600001:700000],new_labels_list[600001:700000]]
-    train_set = [data_list[:600000],new_labels_list[:600000]]
+    valid_set = [new_data_list, new_labels_list]#[new_data_list[160:165],new_labels_list[160:165]] #[[[1,0,0],[2,1,1]],[1,0]] #
+    train_set = [new_data_list, new_labels_list]#[new_data_list[160:165],new_labels_list[160:165]]#[[[1,0,0],[2,1,1]],[1,0]] #[data_list[:600000],new_labels_list[:600000]]
     test_set_x, test_set_y = shared_dataset(test_set)
     valid_set_x, valid_set_y = shared_dataset(valid_set)
     train_set_x, train_set_y = shared_dataset(train_set)
@@ -121,7 +127,7 @@ def load_data(dataset):
     return rval
 
 
-def sgd_optimization_mnist(learning_rate=0.13, n_epochs=10,
+def sgd_optimization_mnist(learning_rate=0.005, n_epochs=100000,
                            dataset='california-crime.pkl.gz',
                            batch_size=10000):
     datasets = load_data(dataset)
@@ -278,9 +284,9 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=10,
     print(('The code for file ' +
            os.path.split(__file__)[1] +
            ' ran for %.1fs' % ((end_time - start_time))), file=sys.stderr)
-    predict(datasets[2])
+    predict(datasets)
 
-def predict(test_set):
+def predict(datasets):
     """
     An example of how to load a trained model and use it
     to predict labels.
@@ -294,13 +300,12 @@ def predict(test_set):
         inputs=[classifier.input],
         outputs=classifier.y_pred)
 
-    test_set_x = test_set[0]
-    test_set_y = test_set[1]
+    test_set_x, test_set_y = datasets[2]
+    test_set_x = test_set_x.get_value()
+
     predicted_values = predict_model(test_set_x[:10])
     print("Predicted values for the first 10 examples in test set:")
     print(predicted_values)
 
-
 if __name__ == '__main__':
     sgd_optimization_mnist()
-    predict()
